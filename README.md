@@ -92,3 +92,33 @@ serve.js        zero-dependency static server (correct wasm MIME)
 - Pinned to **wgpu 25 / winit 0.29**. wgpu ≤ 0.20 crashes current Chrome
   (`maxInterStageShaderComponents`) — do not downgrade.
 - Renders at native device-pixel ratio (crisp on hi-DPI / 4K), capped at 3×.
+
+## Deploy to Vercel
+
+Vercel serves static files — it does **not** build Rust/wasm. So this repo ships
+the prebuilt `pkg/` output and deploys as a **static site** (no build step).
+Vercel serves `.wasm` correctly and provides HTTPS, which WebGPU requires.
+
+**Whenever you change the Rust code, rebuild `pkg/` and commit it before deploy:**
+```bash
+cargo build --release --target wasm32-unknown-unknown
+wasm-bindgen --target web --out-dir pkg --no-typescript \
+  target/wasm32-unknown-unknown/release/tetris3d.wasm
+git add pkg && git commit -m "rebuild wasm" && git push
+```
+
+### Option A — Vercel dashboard (easiest)
+1. Go to <https://vercel.com/new> and **Import** the `moving-towerblockx` repo.
+2. **Framework Preset:** Other. **Build Command:** leave empty (or the no-op in
+   `vercel.json`). **Output Directory:** `.` (root).
+3. **Deploy.** You get a live `https://…vercel.app` URL. Every `git push` to
+   `main` redeploys automatically.
+
+### Option B — Vercel CLI
+```bash
+npm i -g vercel
+vercel          # first run links/creates the project (accept defaults)
+vercel --prod   # deploy to production
+```
+
+`serve.js` is only for local dev — Vercel serves the static files itself.
