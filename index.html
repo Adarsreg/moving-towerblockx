@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>DLF Builder — Gurgaon</title>
+    <title>Moving TowerBloxx</title>
     <style>
         :root {
             --fg: #eaf1ff;
@@ -109,14 +109,14 @@
     <canvas id="game-canvas" width="1280" height="800"></canvas>
 
     <div id="info" class="card">
-        <div class="kicker">Now building · Gurgaon</div>
+        <div class="kicker">Now building</div>
         <div id="bname">—</div>
         <div id="bmeta">—</div>
         <div class="row"><span class="k">Floor</span><span class="v"><span id="floor">0</span><span style="color:var(--muted); font-size:15px"> / <span id="target">0</span></span></span></div>
         <div id="bar"><div id="fill"></div></div>
         <div class="row"><span class="k">Score</span><span id="score" class="v">0</span></div>
         <div class="row"><span class="k">Best</span><span id="high" class="v" style="font-size:16px; color:var(--muted)">0</span></div>
-        <div id="bfact">Loading real Gurgaon buildings from OpenStreetMap…</div>
+        <div id="bfact">Loading real city buildings from OpenStreetMap…</div>
     </div>
 
     <button id="musicToggle" class="card" title="Soundtrack">♪</button>
@@ -144,17 +144,17 @@
     <script type="module">
         const $ = (id) => document.getElementById(id);
 
-        // ---- Boot the wasm + load real Gurgaon buildings ---------------------
+        // ---- Boot the wasm + load real city buildings ------------------------
         if (!("gpu" in navigator)) {
             $("nowebgpu").style.display = "flex";
         } else {
             import("./pkg/tetris3d.js")
-                .then(async (m) => { await m.default(); m.run(); loadGurgaon(m); })
+                .then(async (m) => { await m.default(); m.run(); loadCity(m); })
                 .catch((e) => console.error("Failed to start:", e));
         }
 
-        // ---- Real Gurgaon buildings from OpenStreetMap -----------------------
-        async function loadGurgaon(m) {
+        // ---- Real city buildings from OpenStreetMap --------------------------
+        async function loadCity(m) {
             try {
                 const lat0 = 28.4959, lon0 = 77.0888, d = 0.006;
                 const bbox = [lat0 - d, lon0 - d, lat0 + d, lon0 + d].join(",");
@@ -177,9 +177,9 @@
                     if (++n >= 500) break;
                 }
                 m.set_city(new Float32Array(out));
-                console.log("Loaded", n, "real Gurgaon buildings from OpenStreetMap");
-                $("bfact").textContent = "Surrounded by " + n + " real Gurgaon buildings (OpenStreetMap · DLF Cyber City).";
-            } catch (err) { console.warn("OSM load failed:", err); $("bfact").textContent = "Building the tower in Gurgaon."; }
+                console.log("Loaded", n, "real city buildings from OpenStreetMap");
+                $("bfact").textContent = "Surrounded by " + n + " real city buildings (OpenStreetMap).";
+            } catch (err) { console.warn("OSM load failed:", err); $("bfact").textContent = "Building the tower downtown."; }
         }
 
         // ---- HUD -------------------------------------------------------------

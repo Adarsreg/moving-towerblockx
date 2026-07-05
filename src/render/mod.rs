@@ -19,7 +19,7 @@ pub fn build_instances(game: &Game) -> Vec<Instance> {
 
     scene::ground(&mut out, game.focus_x());
 
-    // Real Gurgaon buildings from OpenStreetMap. We keep a clear CONSTRUCTION
+    // Real city buildings from OpenStreetMap. We keep a clear CONSTRUCTION
     // CORRIDOR down the middle (|z| < CLEAR) so the real city flanks the site on
     // both sides — with the expressways — instead of spawning on top of the
     // tower you're stacking.

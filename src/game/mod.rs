@@ -1,9 +1,9 @@
-//! DLF BUILDER — Gurgaon: a 3D crane-stacker.
+//! TOWER BUILDER: a 3D crane-stacker.
 //!
 //! A hook swings a floor slab back and forth above a plot. The player drops it
 //! (Space / left-click); it falls and lands on the tower. The overlap with the
 //! slab below becomes the new width — sloppy drops make the tower taper, a miss
-//! ends the run. Each slab is one floor of a *real* DLF Gurgaon building; reach
+//! ends the run. Each slab is one floor of a modern city building; reach
 //! the building's real floor count to complete it, then the next building starts
 //! on a fresh plot, growing a skyline.
 //!
@@ -21,7 +21,7 @@ pub const FALL_SPEED: f32 = 26.0; // slab fall speed (units/s)
 pub const PERFECT_EPS: f32 = 0.22; // |offset| under this = a perfect, full-width drop
 pub const PLOT_STEP: f32 = 14.0; // X spacing between completed buildings on the plot
 
-// --- Real DLF Gurgaon building catalog (data collected from public sources) --
+// --- Modern-city building catalog (fictional names, plausible dimensions) --
 #[derive(Clone, Copy)]
 pub struct BuildingDef {
     pub name: &'static str,
@@ -35,21 +35,21 @@ pub struct BuildingDef {
 
 /// Ordered easy → hard (fewest floors first) so difficulty ramps naturally.
 pub const BUILDINGS: &[BuildingDef] = &[
-    BuildingDef { name: "DLF CyberHub",        category: "Retail",      floors: 4,  height_m: 18,  location: "Cyber City",       fact: "Food & entertainment high-street, opened 2013", color: [1.6, 0.4, 1.0] },
-    BuildingDef { name: "DLF Galleria",        category: "Retail",      floors: 5,  height_m: 22,  location: "Sector 91",        fact: "Modern retail + office destination",            color: [1.7, 0.7, 0.3] },
-    BuildingDef { name: "Infinity Tower",      category: "Commercial",  floors: 12, height_m: 48,  location: "Cyber City",       fact: "Flexible floor-plates, by Hafeez Contractor",   color: [0.3, 1.2, 1.2] },
-    BuildingDef { name: "Cyber Greens",        category: "Commercial",  floors: 18, height_m: 72,  location: "Cyber City",       fact: "LEED-Platinum, five interlinked blocks",        color: [0.4, 1.5, 0.8] },
-    BuildingDef { name: "DLF Gateway Tower",   category: "Commercial",  floors: 20, height_m: 80,  location: "Cyber City",       fact: "The high-rise that houses DLF's HQ",            color: [0.8, 0.5, 1.6] },
-    BuildingDef { name: "The Magnolias",       category: "Residential", floors: 20, height_m: 68,  location: "Sector 42",        fact: "Legacy 'Golf Drive' super-luxury residence",    color: [1.4, 1.3, 0.9] },
-    BuildingDef { name: "DLF Epitome",         category: "Commercial",  floors: 22, height_m: 92,  location: "Cyber City",       fact: "Three interlinked towers, 2.06M sq ft",         color: [0.5, 0.7, 1.4] },
-    BuildingDef { name: "One Horizon Center",  category: "Commercial",  floors: 25, height_m: 100, location: "Golf Course Road", fact: "Iconic mixed-use architectural centrepiece",    color: [0.4, 0.9, 1.7] },
-    BuildingDef { name: "The Aralias",         category: "Residential", floors: 28, height_m: 95,  location: "Sector 42",        fact: "Pioneer super-luxury on Golf Course Road",      color: [1.3, 0.8, 0.4] },
-    BuildingDef { name: "The Crest",           category: "Residential", floors: 30, height_m: 108, location: "Sector 54",        fact: "Six towers designed by Hafeez Contractor",      color: [0.4, 1.3, 1.6] },
-    BuildingDef { name: "DLF The Camellias",   category: "Residential", floors: 38, height_m: 156, location: "Sector 42",        fact: "India's costliest flats; first LEED-Platinum home", color: [1.6, 1.2, 0.4] },
+    BuildingDef { name: "Market Plaza",            category: "Retail",      floors: 4,  height_m: 18,  location: "Old Town",           fact: "Neighborhood retail + food court",            color: [1.6, 0.4, 1.0] },
+    BuildingDef { name: "Riverside Mall",          category: "Retail",      floors: 5,  height_m: 22,  location: "Riverside",          fact: "Flagship shopping & entertainment mall",      color: [1.7, 0.7, 0.3] },
+    BuildingDef { name: "Aurora Tower",            category: "Commercial",  floors: 12, height_m: 48,  location: "Business Park",      fact: "Flexible open-plan office floors",            color: [0.3, 1.2, 1.2] },
+    BuildingDef { name: "Green Court",             category: "Commercial",  floors: 18, height_m: 72,  location: "Business Park",      fact: "LEED-certified green office campus",           color: [0.4, 1.5, 0.8] },
+    BuildingDef { name: "Gateway Tower",           category: "Commercial",  floors: 20, height_m: 80,  location: "City Center",        fact: "Corporate headquarters landmark",             color: [0.8, 0.5, 1.6] },
+    BuildingDef { name: "Rosewood Residences",     category: "Residential", floors: 20, height_m: 68,  location: "Uptown",             fact: "Luxury garden apartments",                    color: [1.4, 1.3, 0.9] },
+    BuildingDef { name: "Summit Towers",           category: "Commercial",  floors: 22, height_m: 92,  location: "Financial District", fact: "Three interlinked office towers",             color: [0.5, 0.7, 1.4] },
+    BuildingDef { name: "Skyline Center",          category: "Commercial",  floors: 25, height_m: 100, location: "Central Avenue",     fact: "Iconic mixed-use architectural centerpiece",  color: [0.4, 0.9, 1.7] },
+    BuildingDef { name: "Acacia Heights",          category: "Residential", floors: 28, height_m: 95,  location: "Hillside",           fact: "Premium hillside residences",                 color: [1.3, 0.8, 0.4] },
+    BuildingDef { name: "The Ridge",               category: "Residential", floors: 30, height_m: 108, location: "Parkside",           fact: "Six-tower luxury community",                  color: [0.4, 1.3, 1.6] },
+    BuildingDef { name: "Grand Central Residences", category: "Residential", floors: 38, height_m: 156, location: "Golden Mile",       fact: "The city's tallest luxury address",           color: [1.6, 1.2, 0.4] },
 ];
 
 /// A real building pulled from OpenStreetMap (projected to scene units): the
-/// actual Gurgaon cityscape that surrounds the build site.
+/// actual cityscape that surrounds the build site.
 #[derive(Clone, Copy)]
 pub struct CityBox {
     pub x: f32,
@@ -90,7 +90,7 @@ pub struct StepOutcome {
 pub struct Game {
     /// Every placed slab across the whole plot (current tower + finished skyline).
     pub slabs: Vec<Slab>,
-    /// Real OSM Gurgaon buildings surrounding the site (loaded async from JS).
+    /// Real OSM city buildings surrounding the site (loaded async from JS).
     pub city: Vec<CityBox>,
 
     pub current: usize, // index into BUILDINGS

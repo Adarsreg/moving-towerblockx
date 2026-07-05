@@ -170,11 +170,11 @@ impl App {
     }
 
     fn frame(&mut self) {
-        // Pick up real OSM Gurgaon buildings once the JS loader delivers them.
+        // Pick up real OSM city buildings once the JS loader delivers them.
         #[cfg(target_arch = "wasm32")]
         if let Some(data) = PENDING_CITY.with(|c| c.borrow_mut().take()) {
             self.game.set_city(&data);
-            log::info!("Loaded {} real Gurgaon buildings from OSM", self.game.city.len());
+            log::info!("Loaded {} real city buildings from OSM", self.game.city.len());
         }
 
         // Keep the surface matched to the canvas (web rarely emits Resized).
@@ -301,7 +301,7 @@ pub fn start() {
     let event_loop = EventLoop::new().expect("event loop");
     let window = Arc::new(
         WindowBuilder::new()
-            .with_title("DLF Builder — Gurgaon")
+            .with_title("Tower Builder")
             .build(&event_loop)
             .expect("window"),
     );

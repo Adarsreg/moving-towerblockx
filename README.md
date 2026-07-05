@@ -1,10 +1,10 @@
-# Moving TowerBloxx — Gurgaon
+# Moving TowerBloxx
 
 A browser 3D **crane-stacker city builder**. A hook swings a floor-slab over a
-plot; you drop it to stack a tower, floor by floor, building **real DLF Gurgaon
-buildings** to their actual floor counts. The build site sits inside a live
-recreation of **Gurgaon (DLF Cyber City) pulled from OpenStreetMap**, with
-expressways full of traffic, an elevated Rapid Metro, Times-Square-style LED
+plot; you drop it to stack a tower, floor by floor, constructing modern-city
+buildings up to their target floor counts. The build site sits inside a live
+cityscape of **real building footprints pulled from OpenStreetMap**, with
+expressways full of traffic, an elevated metro line, Times-Square-style LED
 billboards, golden-hour haze, bloom and real-time shadows.
 
 Runs entirely on **WebGPU** — Rust compiled to WebAssembly, rendering via `wgpu`.
@@ -34,8 +34,8 @@ tone-map). Everything is one instanced unit-cube draw.
 - **P** pause · **F** fullscreen · **M** mute · **♪** toggle soundtrack
 
 Land slabs aligned for full-width floors (combo on a perfect drop); sloppy drops
-taper the tower, a near-total miss topples it. Complete a building's real floor
-count to move to the next DLF building.
+taper the tower, a near-total miss topples it. Complete a building's floor count
+to move to the next building.
 
 ## Running it
 ### Prerequisites
@@ -59,7 +59,7 @@ wasm-bindgen --target web --out-dir pkg --no-typescript \
 node serve.js            # -> http://localhost:8080
 ```
 Open http://localhost:8080 and click once (starts audio + fullscreen). It fetches
-the real Gurgaon buildings from OpenStreetMap on load.
+the real city buildings from OpenStreetMap on load.
 
 > The crate is named `tetris3d` (historical), so the artifact is `tetris3d.wasm`
 > and `index.html` imports `./pkg/tetris3d.js`.
@@ -75,31 +75,19 @@ src/
   lib.rs        wasm entry (run, set_city)
   main.rs       native entry
   app.rs        winit loop, mouse+touch input, game loop, JS bridges
-  game/mod.rs   crane-stacker sim + real DLF building catalog
+  game/mod.rs   crane-stacker sim + building catalog
   render/       gpu, camera, cube, instance, scene, pipeline (shadow+HDR+bloom)
   shaders/      cube.wgsl (material) + post.wgsl (bloom + tone-map)
 index.html      UI, WebGPU gate, OSM loader, audio, HUD bridges
 serve.js        zero-dependency static server (correct wasm MIME)
 ```
 
-## Data & attribution
-- Building footprints/heights: **© OpenStreetMap contributors** (ODbL) via the
-  Overpass API, sampled around DLF Cyber City, Gurugram.
-- Real DLF facts baked into `src/game/mod.rs` from public sources.
-- Soundtrack: your own file or a YouTube playlist (IFrame Player API).
-
-## Notes
-- Pinned to **wgpu 25 / winit 0.29**. wgpu ≤ 0.20 crashes current Chrome
-  (`maxInterStageShaderComponents`) — do not downgrade.
-- Renders at native device-pixel ratio (crisp on hi-DPI / 4K), capped at 3×.
-
 ## Deploy to Vercel
+Vercel serves static files — it does **not** build Rust/wasm. This repo ships the
+prebuilt `pkg/` output and deploys as a **static site** (no build step). Vercel
+serves `.wasm` correctly and provides HTTPS, which WebGPU requires.
 
-Vercel serves static files — it does **not** build Rust/wasm. So this repo ships
-the prebuilt `pkg/` output and deploys as a **static site** (no build step).
-Vercel serves `.wasm` correctly and provides HTTPS, which WebGPU requires.
-
-**Whenever you change the Rust code, rebuild `pkg/` and commit it before deploy:**
+**After any Rust change, rebuild `pkg/` and commit it before deploying:**
 ```bash
 cargo build --release --target wasm32-unknown-unknown
 wasm-bindgen --target web --out-dir pkg --no-typescript \
@@ -107,18 +95,19 @@ wasm-bindgen --target web --out-dir pkg --no-typescript \
 git add pkg && git commit -m "rebuild wasm" && git push
 ```
 
-### Option A — Vercel dashboard (easiest)
-1. Go to <https://vercel.com/new> and **Import** the `moving-towerblockx` repo.
-2. **Framework Preset:** Other. **Build Command:** leave empty (or the no-op in
-   `vercel.json`). **Output Directory:** `.` (root).
-3. **Deploy.** You get a live `https://…vercel.app` URL. Every `git push` to
-   `main` redeploys automatically.
+- **Dashboard:** import the repo at <https://vercel.com/new>, Framework = Other,
+  leave Build Command and Output Directory blank, Deploy.
+- **CLI:** `npm i -g vercel && vercel --prod`
 
-### Option B — Vercel CLI
-```bash
-npm i -g vercel
-vercel          # first run links/creates the project (accept defaults)
-vercel --prod   # deploy to production
-```
+`serve.js` is only for local dev.
 
-`serve.js` is only for local dev — Vercel serves the static files itself.
+## Data & attribution
+- Building footprints/heights: **© OpenStreetMap contributors** (ODbL), via the
+  Overpass API.
+- Building names in `src/game/mod.rs` are fictional.
+- Soundtrack: your own file or a YouTube playlist (IFrame Player API).
+
+## Notes
+- Pinned to **wgpu 25 / winit 0.29**. wgpu ≤ 0.20 crashes current Chrome
+  (`maxInterStageShaderComponents`) — do not downgrade.
+- Renders at native device-pixel ratio (crisp on hi-DPI / 4K), capped at 3×.

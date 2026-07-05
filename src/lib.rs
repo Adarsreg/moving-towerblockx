@@ -24,7 +24,7 @@ fn init_logging() {
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub fn run() {
     init_logging();
-    log::info!("DLF Builder booting — {} buildings in catalog", game::BUILDINGS.len());
+    log::info!("Tower Builder booting — {} buildings in catalog", game::BUILDINGS.len());
     app::start();
 }
 

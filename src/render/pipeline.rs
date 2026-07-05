@@ -483,7 +483,7 @@ impl Renderer {
         self.camera.radius += (self.focus_r - self.camera.radius) * k;
     }
 
-    /// Append the animated Gurgaon environment around the plot: expressways with
+    /// Append the animated city environment around the plot: expressways with
     /// moving traffic, an elevated Rapid Metro line with a passing train, and a
     /// distant glass-tower skyline that dissolves into the golden haze. `cx` is
     /// the current tower's X so the world scrolls with the camera.
@@ -547,7 +547,7 @@ impl Renderer {
         emit_billboard(out, [cx - 6.0, 11.0, 16.6], 9.0, 6.0, t, 5.0);
 
         // --- Distant skyline ring — only as a FALLBACK when the real OSM
-        //     Gurgaon city hasn't loaded yet. Once it has, the real buildings
+        //     city hasn't loaded yet. Once it has, the real buildings
         //     replace this. ---
         if has_city {
             return;
@@ -606,7 +606,7 @@ impl Renderer {
         self.globals.camera_pos = [self.camera.eye.x, self.camera.eye.y, self.camera.eye.z, 1.0];
         self.globals.params = [self.time, self.flash, self.shake, level as f32];
 
-        // Golden-hour Gurgaon haze — distant towers dissolve into warm amber smog.
+        // Golden-hour haze — distant towers dissolve into warm amber smog.
         let sky = [
             0.62 + 0.03 * (self.time * 0.05).sin(),
             0.42 + 0.02 * (self.time * 0.06).cos(),
