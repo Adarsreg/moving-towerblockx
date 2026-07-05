@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>DLF Builder — Gurgaon</title>
+    <style>
+        :root {
+            --fg: #eaf1ff;
+            --muted: #93a4c4;
+            --accent: #5db4ff;
+            --gold: #ffcf6b;
+            --card: rgba(14, 18, 30, 0.62);
+            --line: rgba(120, 150, 200, 0.18);
+            --font: -apple-system, "Segoe UI", Roboto, Inter, system-ui, sans-serif;
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0; height: 100%; overflow: hidden; background: #05070d; color: var(--fg); font-family: var(--font);
+            /* Stop mobile scroll / pinch-zoom / long-press-select from fighting the game. */
+            touch-action: none; -webkit-user-select: none; user-select: none; overscroll-behavior: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Full-viewport canvas — winit binds to this by id. */
+        canvas#game-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; touch-action: none; }
+
+        .card {
+            position: fixed; z-index: 5;
+            background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+            padding: 14px 16px; backdrop-filter: blur(10px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+        }
+
+        /* Top-left: build status */
+        #info { top: 16px; left: 16px; width: 268px; pointer-events: none; }
+        #info .kicker { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+        #bname { font-size: 20px; font-weight: 700; margin: 4px 0 2px; }
+        #bmeta { font-size: 12px; color: var(--muted); }
+        #bfact { font-size: 12px; color: #b9c8e6; margin-top: 10px; line-height: 1.45; border-left: 2px solid var(--accent); padding-left: 10px; }
+        .row { display: flex; justify-content: space-between; align-items: baseline; margin-top: 12px; }
+        .row .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+        .row .v { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+        #score.pop { animation: pop .3s ease; }
+        @keyframes pop { 0%{transform:scale(1)} 40%{transform:scale(1.18); color:var(--gold)} 100%{transform:scale(1)} }
+        #bar { height: 6px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; margin-top: 10px; }
+        #fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--gold)); transition: width .25s ease; }
+
+        /* Top-right controls: round toggle buttons */
+        #musicToggle, #fs { top: 16px; width: 42px; height: 42px; padding: 0; font-size: 18px; border-radius: 50%; }
+        #musicToggle { right: 16px; }
+        #fs { right: 66px; }
+
+        /* Music panel — hidden by default, revealed by the ♪ toggle. */
+        #music { top: 68px; right: 16px; width: 240px; display: none; }
+        #music.open { display: block; }
+        #music .kicker { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+        #np { font-size: 12px; color: #b9c8e6; min-height: 30px; line-height: 1.35; }
+        #np b { color: var(--gold); font-weight: 600; }
+        .btns { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        button, label.file {
+            font: inherit; font-size: 12px; cursor: pointer; color: var(--fg);
+            background: rgba(255,255,255,0.06); border: 1px solid var(--line);
+            border-radius: 9px; padding: 8px 10px; transition: background .12s;
+        }
+        button:hover, label.file:hover { background: rgba(255,255,255,0.12); }
+        #pl { width: 100%; margin-top: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--line);
+              border-radius: 8px; color: var(--fg); padding: 7px 9px; font: inherit; font-size: 12px; }
+        #yt { margin-top: 10px; border-radius: 8px; overflow: hidden; }
+
+        /* Bottom hint */
+        #hint { bottom: 14px; left: 50%; transform: translateX(-50%); font-size: 12px; color: var(--muted);
+                padding: 8px 16px; pointer-events: none; }
+        #hint b { color: var(--fg); font-weight: 600; }
+
+        /* Center toast */
+        #toast { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 6; }
+        #toast .msg { font-size: 40px; font-weight: 800; letter-spacing: 1px; color: var(--gold);
+                      text-shadow: 0 4px 30px rgba(255,180,80,0.5); animation: toast 1.2s ease forwards; }
+        @keyframes toast { 0%{transform:scale(.5) translateY(20px); opacity:0} 25%{transform:scale(1.1); opacity:1}
+                           70%{transform:scale(1); opacity:1} 100%{transform:scale(1) translateY(-40px); opacity:0} }
+
+        /* Pause / game over overlay */
+        /* pointer-events:none so a click to restart passes through to the canvas. */
+        #overlay { position: fixed; inset: 0; z-index: 8; display: none; align-items: center; justify-content: center;
+                   text-align: center; background: rgba(5,7,13,0.55); backdrop-filter: blur(3px); pointer-events: none; }
+        #overlay.show { display: flex; }
+        #overlay .big { font-size: 44px; font-weight: 800; }
+        #overlay .sub { font-size: 15px; color: var(--muted); margin-top: 14px; }
+
+
+        #nowebgpu { position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center;
+                    text-align: center; padding: 2rem; background: #05070d; }
+
+        /* --- Mobile / small screens --- */
+        @media (max-width: 680px) {
+            #info { width: 60vw; max-width: 240px; padding: 10px 12px; top: 10px; left: 10px; }
+            #bname { font-size: 16px; }
+            #bfact { display: none; }               /* save space on phones */
+            .row .v { font-size: 18px; }
+            #music { width: min(78vw, 260px); top: 62px; right: 10px; }
+            #musicToggle { right: 10px; } #fs { right: 60px; }
+            #hint { font-size: 10px; padding: 6px 10px; bottom: 8px; width: 92vw; text-align: center; }
+            #toast .msg { font-size: 26px; }
+            #overlay .big { font-size: 30px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="game-canvas" width="1280" height="800"></canvas>
+
+    <div id="info" class="card">
+        <div class="kicker">Now building · Gurgaon</div>
+        <div id="bname">—</div>
+        <div id="bmeta">—</div>
+        <div class="row"><span class="k">Floor</span><span class="v"><span id="floor">0</span><span style="color:var(--muted); font-size:15px"> / <span id="target">0</span></span></span></div>
+        <div id="bar"><div id="fill"></div></div>
+        <div class="row"><span class="k">Score</span><span id="score" class="v">0</span></div>
+        <div class="row"><span class="k">Best</span><span id="high" class="v" style="font-size:16px; color:var(--muted)">0</span></div>
+        <div id="bfact">Loading real Gurgaon buildings from OpenStreetMap…</div>
+    </div>
+
+    <button id="musicToggle" class="card" title="Soundtrack">♪</button>
+    <button id="fs" class="card" title="Fullscreen (F)">⛶</button>
+
+    <div id="music" class="card">
+        <div class="kicker">♪ Soundtrack</div>
+        <div id="np">Pick a track or shuffle a playlist.</div>
+        <input id="pl" placeholder="YouTube playlist URL…" value="https://youtube.com/playlist?list=PLPRWtKgY2MOt0vEgI4iIpxNoGC8bsCjEh" />
+        <div class="btns">
+            <button id="shuffle">⤮ Shuffle</button>
+            <button id="next">⏭ Next</button>
+            <label class="file">🎵 File<input id="filein" type="file" accept="audio/*" hidden /></label>
+        </div>
+        <div id="yt"></div>
+    </div>
+
+    <div id="hint" class="card"><b>Click</b> / <b>Space</b> to drop · <b>Right-drag</b> to look · <b>P</b> pause · <b>F</b> fullscreen · <b>M</b> mute</div>
+
+    <div id="toast"></div>
+    <div id="overlay"><div><div class="big" id="ov-big">PAUSED</div><div class="sub" id="ov-sub"></div></div></div>
+
+    <div id="nowebgpu"><div><h1>WebGPU not available</h1><p>Use Chrome/Edge 113+ (or a browser with WebGPU enabled).</p></div></div>
+
+    <script type="module">
+        const $ = (id) => document.getElementById(id);
+
+        // ---- Boot the wasm + load real Gurgaon buildings ---------------------
+        if (!("gpu" in navigator)) {
+            $("nowebgpu").style.display = "flex";
+        } else {
+            import("./pkg/tetris3d.js")
+                .then(async (m) => { await m.default(); m.run(); loadGurgaon(m); })
+                .catch((e) => console.error("Failed to start:", e));
+        }
+
+        // ---- Real Gurgaon buildings from OpenStreetMap -----------------------
+        async function loadGurgaon(m) {
+            try {
+                const lat0 = 28.4959, lon0 = 77.0888, d = 0.006;
+                const bbox = [lat0 - d, lon0 - d, lat0 + d, lon0 + d].join(",");
+                const q = `[out:json][timeout:25];(way["building"](${bbox}););out geom;`;
+                const url = "https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(q);
+                const json = await (await fetch(url)).json();
+                const S = 0.42, mLat = 110540, mLon = 111320 * Math.cos(lat0 * Math.PI / 180);
+                const out = []; let n = 0;
+                for (const el of json.elements || []) {
+                    if (el.type !== "way" || !el.geometry || el.geometry.length < 3) continue;
+                    let a = 1e9, b = -1e9, c = 1e9, e = -1e9;
+                    for (const g of el.geometry) {
+                        const x = (g.lon - lon0) * mLon, z = -(g.lat - lat0) * mLat;
+                        if (x < a) a = x; if (x > b) b = x; if (z < c) c = z; if (z > e) e = z;
+                    }
+                    const w = b - a, dp = e - c; if (w < 3 || dp < 3) continue;
+                    const t = el.tags || {};
+                    const h = parseFloat(t.height) || (parseFloat(t["building:levels"]) * 3.2) || (12 + (el.id % 6) * 7);
+                    out.push(((a + b) / 2) * S, ((c + e) / 2) * S, w * S, dp * S, h * S);
+                    if (++n >= 500) break;
+                }
+                m.set_city(new Float32Array(out));
+                console.log("Loaded", n, "real Gurgaon buildings from OpenStreetMap");
+                $("bfact").textContent = "Surrounded by " + n + " real Gurgaon buildings (OpenStreetMap · DLF Cyber City).";
+            } catch (err) { console.warn("OSM load failed:", err); $("bfact").textContent = "Building the tower in Gurgaon."; }
+        }
+
+        // ---- HUD -------------------------------------------------------------
+        const scoreEl = $("score"), highEl = $("high"), floorEl = $("floor"), targetEl = $("target"),
+              fillEl = $("fill"), bnameEl = $("bname"), bmetaEl = $("bmeta"), bfactEl = $("bfact");
+        let shown = 0, target = 0, high = +(localStorage.getItem("dlf_high") || 0);
+        highEl.textContent = high.toLocaleString();
+        (function anim() {
+            if (shown !== target) {
+                const diff = target - shown;
+                shown += Math.sign(diff) * Math.max(1, Math.floor(Math.abs(diff) / 6));
+                if (Math.abs(target - shown) < 2) shown = target;
+                scoreEl.textContent = shown.toLocaleString();
+            }
+            requestAnimationFrame(anim);
+        })();
+        window.__hud = (score, floor, tgt) => {
+            if (score !== target) { scoreEl.classList.remove("pop"); void scoreEl.offsetWidth; scoreEl.classList.add("pop"); }
+            target = score;
+            if (score > high) { high = score; highEl.textContent = high.toLocaleString(); localStorage.setItem("dlf_high", high); }
+            floorEl.textContent = floor; targetEl.textContent = tgt;
+            fillEl.style.width = (tgt ? Math.min(100, (floor / tgt) * 100) : 0) + "%";
+        };
+        window.__building = (name, category, location, fact, floors, height) => {
+            bnameEl.textContent = name;
+            bmetaEl.textContent = category + " · " + location + " · " + height + " m · " + floors + " floors";
+            bfactEl.textContent = fact; targetEl.textContent = floors;
+        };
+
+        // ---- Overlay + toasts ------------------------------------------------
+        const overlay = $("overlay"), ovBig = $("ov-big"), ovSub = $("ov-sub"), toast = $("toast");
+        window.__overlay = (kind) => {
+            if (kind === 0) { overlay.classList.remove("show"); return; }
+            if (kind === 1) { ovBig.textContent = "Paused"; ovSub.textContent = "Press P to resume"; }
+            else { ovBig.textContent = "Topple!"; ovSub.textContent = "Score " + shown.toLocaleString() + " · click or press any key to rebuild"; }
+            overlay.classList.add("show");
+        };
+        window.__event = (kind, n) => {
+            let text = kind === 1 ? "Perfect ×" + n : kind === 3 ? "✓ Complete!" : kind === 2 ? "Nice!" : "Level " + n;
+            const el = document.createElement("div"); el.className = "msg"; el.textContent = text;
+            toast.innerHTML = ""; toast.appendChild(el);
+            setTimeout(() => { if (el.parentNode === toast) toast.innerHTML = ""; }, 1200);
+        };
+
+        // ---- SFX -------------------------------------------------------------
+        let AC = null, sfxGain = null, sfxMuted = false, voices = [];
+        function ensureAC() {
+            if (AC) return;
+            AC = new (window.AudioContext || window.webkitAudioContext)();
+            if (AC.resume) AC.resume();
+            sfxGain = AC.createGain(); sfxGain.gain.value = 0.9; sfxGain.connect(AC.destination);
+        }
+        function blip(type, f, dur, vol, glide) {
+            if (!AC || sfxMuted) return;
+            const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+            o.type = type; o.frequency.setValueAtTime(f, t);
+            if (glide) o.frequency.exponentialRampToValueAtTime(glide, t + dur);
+            g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+            o.connect(g).connect(sfxGain); o.start(t); o.stop(t + dur + 0.02);
+            voices.push(o); o.onended = () => { const i = voices.indexOf(o); if (i >= 0) voices.splice(i, 1); };
+        }
+        function chord(fs, dur, vol) { fs.forEach((f, i) => blip("triangle", f, dur - i * 0.02, vol, f * 1.5)); }
+        window.__sfx = (k) => {
+            ensureAC();
+            if (k === 1) blip("triangle", 330, 0.10, 0.16, 520);
+            else if (k === 2) blip("sine", 130, 0.16, 0.34, 70);
+            else if (k === 4) chord([392, 523, 659, 880, 1174], 0.55, 0.28);
+            else if (k === 5) chord([330, 262, 196, 130], 0.8, 0.30);
+            else if (k === 6) blip("sawtooth", 480, 0.16, 0.24, 90);
+        };
+        window.__stopsfx = () => { const now = AC ? AC.currentTime : 0; voices.forEach((o) => { try { o.stop(now); } catch (e) {} }); voices = []; };
+        window.addEventListener("keydown", (e) => { ensureAC(); if (e.key === "m" || e.key === "M") sfxMuted = !sfxMuted; }, { capture: true });
+
+        // ---- Fullscreen ------------------------------------------------------
+        function toggleFullscreen() {
+            const el = document.documentElement;
+            if (!document.fullscreenElement) el.requestFullscreen && el.requestFullscreen().catch(() => {});
+            else document.exitFullscreen && document.exitFullscreen();
+        }
+        $("fs").addEventListener("click", toggleFullscreen);
+        window.addEventListener("keydown", (e) => { if (e.key === "f" || e.key === "F") toggleFullscreen(); }, { capture: true });
+        // Soundtrack panel is hidden by default; ♪ toggles it.
+        $("musicToggle").addEventListener("click", () => $("music").classList.toggle("open"));
+
+        // ---- Music: local file + YouTube playlist shuffle --------------------
+        const np = $("np"), audio = new Audio(); audio.loop = true;
+        $("filein").addEventListener("change", (e) => {
+            const f = e.target.files[0]; if (!f) return;
+            stopYT(); audio.src = URL.createObjectURL(f);
+            audio.play().then(() => np.innerHTML = "Now playing<br><b>" + f.name + "</b>").catch(() => {});
+        });
+        let yt = null, ytRes, firstPlay = false, pending = null;
+        const ytReady = new Promise((r) => (ytRes = r));
+        window.onYouTubeIframeAPIReady = () => ytRes();
+        (function () { const s = document.createElement("script"); s.src = "https://www.youtube.com/iframe_api"; document.head.appendChild(s); })();
+        function parseList(u) { const m = String(u).match(/[?&]list=([^&]+)/); return m ? m[1] : (/^PL|^UU|^OL|^RD/.test(u.trim()) ? u.trim() : null); }
+        function stopYT() { try { yt && yt.stopVideo(); } catch (e) {} }
+        async function shufflePlay() {
+            const id = parseList($("pl").value); if (!id) { np.textContent = "Paste a YouTube playlist URL."; return; }
+            audio.pause(); await ytReady;
+            if (!yt) {
+                yt = new YT.Player("yt", { height: "132", width: "208", playerVars: { playsinline: 1, autoplay: 1 },
+                    events: {
+                        onReady: () => pending && load(pending),
+                        onStateChange: (ev) => {
+                            if (ev.data === YT.PlayerState.PLAYING) {
+                                if (!firstPlay) { firstPlay = true; yt.setShuffle(true); yt.nextVideo(); }
+                                const d = yt.getVideoData(); np.innerHTML = "Now playing<br><b>" + (d && d.title ? d.title : "…") + "</b>";
+                            }
+                        } } });
+                pending = id;
+            } else load(id);
+        }
+        function load(id) { firstPlay = false; yt.loadPlaylist({ listType: "playlist", list: id }); yt.setShuffle(true); yt.playVideo(); }
+        $("shuffle").addEventListener("click", shufflePlay);
+        $("next").addEventListener("click", () => { try { yt && yt.nextVideo(); } catch (e) {} });
+
+        // ---- First-gesture: go fullscreen + start the default playlist -------
+        let started = false;
+        function firstGesture() {
+            if (started) return; started = true;
+            ensureAC(); shufflePlay();
+            const el = document.documentElement; if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+        }
+        window.addEventListener("pointerdown", firstGesture, { capture: true });
+        window.addEventListener("keydown", firstGesture, { capture: true });
+    </script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+[package]
+name = "tetris3d"
+version = "0.1.0"
+edition = "2021"
+description = "Browser-based 3D Tetris using wgpu (WebGPU) + Wasm"
+
+[lib]
+# cdylib is required to produce the .wasm module that wasm-bindgen post-processes.
+crate-type = ["cdylib", "rlib"]
+
+# Native desktop binary for fast debugging (distinct name from the lib).
+[[bin]]
+name = "dlf_builder"
+path = "src/main.rs"
+
+[dependencies]
+# --- Core graphics / windowing / math (shared native + wasm) ---
+# wgpu default features give the native backends (dx12 on Windows) + wgsl.
+# `webgl` is NOT a default feature, so the browser build below stays WebGPU-only.
+# wgpu 24: 0.20 sent a `maxInterStageShaderComponents` limit that current Chrome
+# rejects; 24 removed it (and still uses raw-window-handle 0.6 = winit 0.29).
+wgpu = "25"
+winit = { version = "0.29", features = ["rwh_06"] }
+glam = { version = "0.27", features = ["bytemuck"] }
+bytemuck = { version = "1.16", features = ["derive"] }
+log = "0.4"
+cfg-if = "1"
+
+# --- Wasm-only dependencies ---
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+console_error_panic_hook = "0.1"
+console_log = "1"
+# On wasm we additionally enable the WebGPU browser backend (feature-unioned
+# with the base dep). We do NOT enable `webgl`, so this targets WebGPU proper.
+wgpu = { version = "25", features = ["webgpu"] }
+web-sys = { version = "0.3", features = [
+    "Document",
+    "Window",
+    "Element",
+    "HtmlCanvasElement",
+    "Performance",
+    "console",
+] }
+js-sys = "0.3"
+
+# --- Native-only (desktop dev/debug build) ---
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+env_logger = "0.11"
+pollster = "0.3"          # block_on the async gpu init on native
+
+# Smaller/faster wasm output.
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
